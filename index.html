@@ -1,0 +1,56 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BUITI · จดหมายจากพี่รหัส</title><link rel="stylesheet" href="style.css">
+<style>
+main{position:relative;z-index:1;min-height:100vh;display:grid;place-items:center;padding:24px}
+.card{width:min(440px,100%);padding:38px 30px;text-align:center}
+.logo{letter-spacing:.45em;font-size:13px;color:var(--mut);margin-bottom:14px}
+.heart{font-size:46px;color:var(--rose);filter:drop-shadow(0 0 14px var(--rose));animation:bt 2s infinite}
+@keyframes bt{50%{transform:scale(1.15)}}
+h1{margin:6px 0;font-weight:600;font-size:30px;background:linear-gradient(90deg,#ffd0e2,#c9b6ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+p{color:var(--mut);margin:6px 0 20px;font-size:15px}.f{display:grid;gap:12px}.sm{font-size:12px;margin:18px 0 0;font-style:italic}
+#msg{color:#ff9db8;min-height:20px;margin-top:10px;font-size:14px}
+.env{position:relative;width:230px;height:150px;margin:20px auto 0}
+.env .bk{position:absolute;inset:0;background:linear-gradient(160deg,#3a2466,#241446);border-radius:10px;border:1px solid #ffffff30}
+.env .fl{position:absolute;left:0;right:0;top:0;height:80px;background:#4a2f80;clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:top;animation:op 1s .2s forwards;z-index:3;border-radius:10px 10px 0 0}
+.env .lt{position:absolute;left:14px;right:14px;top:10px;height:120px;background:#fff4f8;border-radius:8px;animation:up 1s 1s forwards;z-index:2;color:#7a2a55;display:grid;place-items:center;font-size:34px}
+.env .fr{position:absolute;inset:0;z-index:4;background:linear-gradient(160deg,#5a3a99,#33205c);clip-path:polygon(0 100%,0 35%,50% 65%,100% 35%,100% 100%);border-radius:10px}
+@keyframes op{to{transform:rotateX(180deg);z-index:1}}@keyframes up{to{transform:translateY(-70px)}}
+#res{display:none;margin-top:90px;animation:in 1s 1.8s both}@keyframes in{from{opacity:0;transform:translateY(12px)}}
+.hint{margin:14px 0;padding:18px;border-radius:16px;background:linear-gradient(135deg,#ff6fa530,#9b7bff30);border:1px solid #ff6fa566;font-size:20px;line-height:1.5;box-shadow:0 0 30px #ff6fa533}
+
+p,.hint{text-wrap:balance}
+#out{position:relative}
+.burst{position:absolute;left:50%;top:75px;pointer-events:none;z-index:5;color:var(--rose);animation:bu 1.6s ease-out forwards;text-shadow:0 0 10px currentColor}
+@keyframes bu{from{opacity:1;transform:translate(-50%,-50%) scale(.4)}to{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.2) rotate(var(--r))}}
+.lbl{font-size:13px;color:#ffd0e2;letter-spacing:.08em;margin:18px 0 0}
+.hint::before{content:'“';margin-right:4px;color:var(--rose)}.hint::after{content:'”';margin-left:4px;color:var(--rose)}
+.fin{font-size:14px;color:#c9b6ff}
+.btn:focus-visible,input:focus-visible{outline:2px solid #ffd0e2;outline-offset:2px}
+@media(max-width:420px){.card{padding:30px 20px}h1{font-size:26px}.hint{font-size:18px}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-delay:0s!important}.burst{display:none}}
+</style></head><body><main><div class="card glass"><div class="logo">BUITI · ITI</div>
+<div id="form"><div class="heart">💗</div><h1>จดหมายจากพี่รหัส</h1><p>กรอกรหัสนักศึกษาของน้องเพื่อเปิดจดหมายจากพี่รหัสของคุณ</p>
+<div class="f"><input id="sid" type="text" maxlength="20" placeholder="กรอกรหัสนักศึกษา" autocomplete="off"><button id="go" class="btn">เปิดจดหมาย</button></div><div id="msg"></div><p class="sm">A little surprise is waiting for you.</p></div>
+<div id="out" style="display:none"><div class="env"><div class="bk"></div><div class="lt">💌</div><div class="fl"></div><div class="fr"></div></div>
+<div id="res"><h1>You’ve got a letter!</h1><p style="margin:0">Your Senior Code is…</p><div class="lbl">คำใบ้จากพี่รหัสของคุณ</div><div class="hint" id="hint"></div><p>Someone is waiting to get to know you.</p><p class="fin">Good luck finding your senior! ♡</p><button class="btn ghost" onclick="location.reload()">กลับหน้าแรก</button></div></div></div></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script><script src="config.js"></script><script src="fx.js"></script>
+<script>
+const $=i=>document.getElementById(i);
+const sb=window.supabase?supabase.createClient(CFG.URL,CFG.KEY):null;
+const burst=()=>{const o=$('out'),c=['♥','✦','♡','✧'];for(let i=0;i<26;i++){const e=document.createElement('i');e.className='burst';e.textContent=c[i%4];const a=Math.random()*Math.PI*2,d=70+Math.random()*130;e.style.cssText=`--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d-40}px;--r:${(Math.random()*80-40)}deg;font-size:${10+Math.random()*14}px;animation-delay:${Math.random()*.4}s;font-style:normal;color:${i%3?'#ff6fa5':'#c9b6ff'}`;o.append(e);setTimeout(()=>e.remove(),2300)}};
+const err=t=>$('msg').textContent=t;
+const show=h=>{$('hint').textContent=h;$('form').style.display='none';$('out').style.display='block';$('res').style.display='block';setTimeout(burst,900)};
+const demo=/[?&]demo=1/.test(location.search),noCfg=!window.CFG||/YOUR-/.test(CFG.URL+CFG.KEY);
+if(noCfg)err(demo?'โหมดทดลอง: ข้อมูลตัวอย่าง (ยังไม่ได้เชื่อม Supabase)':'ยังไม่ได้ตั้งค่า Supabase ใน config.js (ลองดูตัวอย่างด้วย ?demo=1)');
+$('go').onclick=async()=>{const id=$('sid').value.trim();err('');
+ if(!id)return err('กรุณากรอกรหัสนักศึกษา');
+ if(noCfg){if(demo){$('go').disabled=true;$('go').textContent='กำลังเปิดจดหมาย…';await new Promise(r=>setTimeout(r,800));show('พี่ชอบฟังเพลง และมักนั่งอยู่แถวคณะ (ตัวอย่าง)');return}return err('ยังไม่ได้ตั้งค่า Supabase ใน config.js')}
+ $('go').disabled=true;$('go').textContent='กำลังเปิดจดหมาย…';
+ try{if(!sb)throw new Error('supabase not loaded');const{data,error}=await sb.rpc('get_letter',{p_id:id});if(error)throw error;await new Promise(r=>setTimeout(r,800));
+  if(data.status==='not_found')err('ไม่พบรหัสนักศึกษานี้ในระบบ');
+  else if(data.status==='unmatched')err('ยังไม่พบคู่ของคุณ โปรดรอประกาศผลอีกครั้ง');
+  else show(data.hint||'พี่รหัสของคุณกำลังเตรียมคำใบ้อยู่ โปรดกลับมาใหม่อีกครั้ง')
+ }catch(e){console.error(e);err(!sb?'โหลดไลบรารี Supabase ไม่ได้ ตรวจสอบอินเทอร์เน็ต':'เชื่อมต่อฐานข้อมูลไม่ได้ ตรวจ URL/KEY ใน config.js และว่ารัน schema.sql แล้ว')}
+ $('go').disabled=false;$('go').textContent='เปิดจดหมาย'};
+$('sid').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('go').click()}});
+
+</script></body></html>

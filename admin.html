@@ -1,0 +1,74 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BUITI · Admin</title><link rel="stylesheet" href="style.css">
+<style>
+main{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:20px}
+.box{padding:26px;margin-bottom:16px}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+h1{margin:0;font-size:22px}h2{margin:0 0 12px;font-size:17px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.tabs .btn{opacity:.7}.tabs .btn.on{opacity:1}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{padding:14px;border-radius:14px;background:#ffffff10;border:1px solid #ffffff1f}.stat b{display:block;font-size:26px;color:#ffd0e2}.stat span{font-size:13px;color:var(--mut)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.row input{flex:1;min-width:130px;width:auto}.row select{width:auto}
+.wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:8px;border-bottom:1px solid #ffffff1a;vertical-align:middle}th{color:var(--mut);font-weight:500}
+td input{padding:7px 10px;border-radius:10px}td select{width:auto;padding:7px}
+.ok{color:#7be0a8}.no{color:var(--mut)}.warn{padding:12px 16px;border-radius:14px;background:#ff6fa526;border:1px solid #ff6fa566;margin-bottom:12px}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9;padding:12px 20px;border-radius:14px;background:#241446;border:1px solid #ffffff33;display:none;max-width:90vw}#toast.bad{border-color:#ff6f8a;color:#ffb3c4}
+[hidden]{display:none!important}.login{max-width:380px;margin:12vh auto 0}.login .f{margin-top:16px}
+</style></head><body><main>
+<div id="login" class="box glass login"><h1>BUITI · Admin</h1><div class="f"><input id="em" type="email" placeholder="อีเมลผู้ดูแล" autocomplete="username"><input id="pw" type="password" placeholder="รหัสผ่าน" autocomplete="current-password"><button id="in" class="btn">เข้าสู่ระบบ</button></div></div>
+<div id="dash" hidden>
+<div class="box glass"><div class="top"><h1>💗 BUITI Matching Admin</h1><button id="out" class="btn sm ghost">ออกจากระบบ</button></div>
+<div class="tabs" id="tabs"></div><div id="view"></div></div></div></main><div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script><script src="config.js"></script><script src="fx.js"></script>
+<script>
+const $=i=>document.getElementById(i),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sb=window.supabase&&!/YOUR-/.test(CFG.URL+CFG.KEY)?supabase.createClient(CFG.URL,CFG.KEY):null;
+let S={sen:[],jun:[],mat:[]},tab='ov',pairs=null,q='';
+const T=[['ov','ภาพรวม'],['sen','รุ่นพี่'],['jun','รุ่นน้อง'],['mt','สุ่มจับคู่'],['rs','ผลการจับคู่']];
+function toast(m,bad){const t=$('toast');t.textContent=m;t.className=bad?'bad':'';t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',3800)}
+const fail=e=>toast(e.message||String(e),1);
+async function load(){const[a,b,c]=await Promise.all([sb.from('seniors').select('*').order('id'),sb.from('juniors').select('*').order('id'),sb.from('matches').select('*')]);
+ const er=a.error||b.error||c.error;if(er)return fail(er);S={sen:a.data,jun:b.data,mat:c.data};render()}
+const cnt=()=>{const m={};S.mat.forEach(x=>m[x.senior_id]=(m[x.senior_id]||0)+1);return m};
+const sMap=()=>Object.fromEntries(S.sen.map(x=>[x.id,x])),jMap=()=>Object.fromEntries(S.jun.map(x=>[x.id,x]));
+function stats(){const c=cnt(),quota=S.sen.reduce((n,s)=>n+s.capacity,0),m=S.mat.length,un=S.jun.length-m,left=quota-m;
+ return{c,quota,m,un,left,two:S.sen.filter(s=>s.capacity==2).length,need2:Math.max(0,Math.ceil(un-left)),with:Object.keys(c).length}}
+function render(){$('tabs').innerHTML=T.map(([k,n])=>`<button class="btn sm ${tab==k?'':'ghost'}" data-t="${k}">${n}</button>`).join('');
+ $('view').innerHTML=({ov,sen,jun,mt,rs})[tab]()}
+function ov(){const s=stats(),p=S.jun.length?Math.round(s.m/S.jun.length*100):0;
+ return`${s.un>s.left?`<div class="warn">โควตาไม่พอ: ยังไม่มีคู่ ${s.un} คน แต่ที่ว่างเหลือ ${s.left} ที่ — ต้องตั้งพี่ให้รับน้อง 2 คนเพิ่มอีกอย่างน้อย ${s.un-s.left} คน (ตอนนี้มี ${s.two} คน)</div>`:''}
+ <div class="stats">${[['รุ่นพี่ทั้งหมด',S.sen.length],['รุ่นน้องทั้งหมด',S.jun.length],['จับคู่แล้ว',s.m],['ยังไม่มีคู่',s.un],['พี่ที่มีน้องแล้ว',s.with],['พี่รับ 2 คน',s.two],['โควตาที่เหลือ',s.left],['สำเร็จ',p+'%']].map(([a,b])=>`<div class="stat"><b>${b}</b><span>${a}</span></div>`).join('')}</div>`}
+function sen(){const c=cnt();return`<div class="row"><input id="a1" placeholder="รหัส"><input id="a2" placeholder="ชื่อ-นามสกุล"><input id="a3" placeholder="คำใบ้" style="flex:2"><select id="a4"><option>1</option><option>2</option></select><button class="btn sm" data-a="addS">เพิ่มพี่</button><label class="btn sm ghost">นำเข้า CSV<input type="file" accept=".csv" data-imp="seniors" hidden></label></div>
+ <div class="wrap"><table><tr><th>รหัส</th><th>ชื่อ</th><th>คำใบ้ (น้องเห็น)</th><th>รับน้อง</th><th>เหลือ</th><th></th></tr>${S.sen.map(x=>`<tr><td>${esc(x.id)}</td><td>${esc(x.name)}</td><td><input value="${esc(x.hint)}" data-hint="${esc(x.id)}"></td><td><select data-cap="${esc(x.id)}"><option ${x.capacity==1?'selected':''}>1</option><option ${x.capacity==2?'selected':''}>2</option></select></td><td>${x.capacity-(c[x.id]||0)}</td><td><button class="btn sm ghost" data-del="seniors:${esc(x.id)}">ลบ</button></td></tr>`).join('')}</table></div>`}
+function jun(){const m=new Set(S.mat.map(x=>x.junior_id));return`<div class="row"><input id="a1" placeholder="รหัส"><input id="a2" placeholder="ชื่อ-นามสกุล" style="flex:2"><button class="btn sm" data-a="addJ">เพิ่มน้อง</button><label class="btn sm ghost">นำเข้า CSV<input type="file" accept=".csv" data-imp="juniors" hidden></label></div>
+ <div class="wrap"><table><tr><th>รหัส</th><th>ชื่อ</th><th>สถานะ</th><th></th></tr>${S.jun.map(x=>`<tr><td>${esc(x.id)}</td><td>${esc(x.name)}</td><td class="${m.has(x.id)?'ok':'no'}">${m.has(x.id)?'จับคู่แล้ว':'ยังไม่มีคู่'}</td><td><button class="btn sm ghost" data-del="juniors:${esc(x.id)}">ลบ</button></td></tr>`).join('')}</table></div>`}
+function mt(){const s=stats(),sm=sMap(),jm=jMap();
+ return`<p>ยังไม่มีคู่ <b>${s.un}</b> คน · ที่ว่างเหลือ <b>${s.left}</b> ที่ ${s.un>s.left?'<span class="no">(โควตาไม่พอ ต้องเพิ่มพี่รับ 2 คน)</span>':''}</p><p class="no">สุ่มเฉพาะน้องที่ยังไม่มีคู่ ไม่แตะคู่เดิม ต้อง Preview ก่อนแล้วกด Confirm จึงจะบันทึกจริง</p>
+ <div class="row"><button class="btn" data-a="prev">Preview การสุ่ม</button>${pairs?`<button class="btn" data-a="conf">Confirm บันทึก ${pairs.length} คู่</button>`:''}</div>
+ ${pairs?`<div class="wrap"><table><tr><th>พี่</th><th>น้อง</th></tr>${pairs.map(p=>`<tr><td>${esc(p.senior_id)} ${esc(sm[p.senior_id]?.name)}</td><td>${esc(p.junior_id)} ${esc(jm[p.junior_id]?.name)}</td></tr>`).join('')}</table></div>`:''}`}
+function rows(){const sm=sMap(),jm=jMap(),k=q.toLowerCase();return S.mat.map(m=>[m.senior_id,sm[m.senior_id]?.name||'',m.junior_id,jm[m.junior_id]?.name||'']).filter(r=>!k||r.join(' ').toLowerCase().includes(k)).sort((a,b)=>a[0].localeCompare(b[0]))}
+function rs(){return`<div class="row"><input id="q" placeholder="ค้นหา รหัส/ชื่อ" value="${esc(q)}"><button class="btn sm" data-a="exp">Export CSV</button></div><div class="wrap"><table><tr><th>Senior ID</th><th>Senior Name</th><th>Junior ID</th><th>Junior Name</th></tr>${rows().map(r=>`<tr>${r.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</table></div>`}
+function csv(t){t=t.replace(/^\uFEFF/,'');const out=[];let r=[],f='',qt=0;for(let i=0;i<t.length;i++){const c=t[i];if(qt){if(c=='"'){if(t[i+1]=='"'){f+='"';i++}else qt=0}else f+=c}else if(c=='"')qt=1;else if(c==','){r.push(f);f=''}else if(c=='\n'||c=='\r'){if(c=='\r'&&t[i+1]=='\n')i++;r.push(f);f='';if(r.some(x=>x.trim()))out.push(r);r=[]}else f+=c}r.push(f);if(r.some(x=>x.trim()))out.push(r);return out}
+async function imp(tbl,file){try{const[h,...d]=csv(await file.text());const k=h.map(x=>x.trim().toLowerCase());const rowsI=d.map(r=>{const o=Object.fromEntries(k.map((c,i)=>[c,(r[i]||'').trim()]));if(tbl=='seniors'){o.capacity=o.capacity=='2'?2:1;o.hint=o.hint||''}return o}).filter(o=>o.id&&o.name);
+ if(!rowsI.length)throw new Error('ไม่พบข้อมูล: ไฟล์ต้องมีหัวคอลัมน์ id,name'+(tbl=='seniors'?',hint,capacity':''));
+ const cols=tbl=='seniors'?['id','name','hint','capacity']:['id','name'],clean=rowsI.map(o=>Object.fromEntries(cols.map(c=>[c,o[c]])));
+ const{error}=await sb.from(tbl).upsert(clean,{onConflict:'id'});if(error)throw error;toast(`นำเข้าสำเร็จ ${clean.length} รายการ`);load()}catch(e){fail(e)}}
+async function run(p){try{const{error}=await p;if(error)throw error;await load();return 1}catch(e){fail(e);load()}}
+document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b||!sb)return;
+ if(b.id=='in'){const{error}=await sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});return error?toast('อีเมลหรือรหัสผ่านไม่ถูกต้อง',1):start()}
+ if(b.id=='out'){await sb.auth.signOut();return location.reload()}
+ if(b.dataset.t){tab=b.dataset.t;return render()}
+ const d=b.dataset;
+ if(d.del){const[t,id]=d.del.split(':');if(confirm(`ลบ ${id}?`))run(sb.from(t).delete().eq('id',id))}
+ else if(d.a=='addS'){const id=$('a1').value.trim(),name=$('a2').value.trim();if(!id||!name)return toast('กรอกรหัสและชื่อ',1);if(await run(sb.from('seniors').insert({id,name,hint:$('a3').value.trim(),capacity:+$('a4').value})))toast('เพิ่มแล้ว')}
+ else if(d.a=='addJ'){const id=$('a1').value.trim(),name=$('a2').value.trim();if(!id||!name)return toast('กรอกรหัสและชื่อ',1);if(await run(sb.from('juniors').insert({id,name})))toast('เพิ่มแล้ว')}
+ else if(d.a=='prev'){b.disabled=true;const{data,error}=await sb.rpc('preview_matching');b.disabled=false;if(error)return fail(error);pairs=data;toast(data.length?`สุ่มตัวอย่าง ${data.length} คู่ (ยังไม่บันทึก)`:'ไม่มีน้องที่ต้องจับคู่');render()}
+ else if(d.a=='conf'){if(!confirm(`บันทึก ${pairs.length} คู่? ย้อนกลับไม่ได้`))return;b.disabled=true;const{data,error}=await sb.rpc('confirm_matching',{pairs});b.disabled=false;if(error)return fail(error);pairs=null;toast(`บันทึกสำเร็จ ${data} คู่`);load()}
+ else if(d.a=='exp'){const r=[['Senior ID','Senior Name','Junior ID','Junior Name'],...rows()];const t='\uFEFF'+r.map(x=>x.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'}));a.download='matching-results.csv';a.click()}});
+document.addEventListener('change',e=>{const t=e.target,d=t.dataset;
+ if(d.imp&&t.files[0])imp(d.imp,t.files[0]).then(()=>t.value='');
+ else if(d.hint!=null)run(sb.from('seniors').update({hint:t.value.trim()}).eq('id',d.hint)).then(ok=>ok&&toast('บันทึกคำใบ้แล้ว'));
+ else if(d.cap!=null)run(sb.from('seniors').update({capacity:+t.value}).eq('id',d.cap));});
+document.addEventListener('input',e=>{if(e.target.id=='q'){q=e.target.value;const p=e.target.selectionStart;render();const n=$('q');n.focus();n.setSelectionRange(p,p)}});
+document.addEventListener('keydown',e=>{if(e.key=='Enter'&&(e.target.id=='pw'||e.target.id=='em'))$('in').click()});
+async function start(){$('login').hidden=true;$('dash').hidden=false;load()}
+(async()=>{if(!sb){toast('ยังไม่ได้ตั้งค่า Supabase ใน config.js',1);return}const{data}=await sb.auth.getSession();if(data.session)start()})();
+</script></body></html>
